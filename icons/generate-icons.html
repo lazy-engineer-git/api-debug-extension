@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>Icon Generator — APIデバッグ補助</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #11121d;
+      color: #dde6f5;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      padding: 32px;
+      min-height: 100vh;
+    }
+    h1 { font-size: 18px; font-weight: 600; margin-bottom: 6px; color: #fff; }
+    .sub { font-size: 12px; color: #4e6080; margin-bottom: 32px; }
+    .row { display: flex; gap: 32px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 40px; }
+    .item { text-align: center; }
+    .size-label { font-size: 11px; color: #4e6080; margin-bottom: 8px; letter-spacing: 0.05em; text-transform: uppercase; }
+    canvas {
+      display: block;
+      margin: 0 auto 12px;
+      border-radius: 4px;
+      box-shadow: 0 0 0 1px #2b3258;
+    }
+    .dl-btn {
+      display: block;
+      padding: 6px 16px;
+      background: #60a5fa;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      transition: background 0.15s;
+    }
+    .dl-btn:hover { background: #4e96e8; }
+
+    .section-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: #8a9cc0; }
+    .toolbar-sim {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #dee1e6;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: #333;
+      margin-bottom: 6px;
+    }
+    .badge-sim {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      background: #e53e3e;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      border-radius: 3px;
+      margin-left: 2px;
+    }
+    .instructions {
+      margin-top: 32px;
+      padding: 16px 18px;
+      background: #1d2035;
+      border: 1px solid #2b3258;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 2;
+      color: #8a9cc0;
+    }
+    .instructions code {
+      font-family: Consolas, monospace;
+      color: #60a5fa;
+      background: #11121d;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <h1>APIデバッグ補助 — アイコン生成</h1>
+  <p class="sub">ダウンロードしたファイルを <code style="font-family:Consolas;color:#60a5fa;background:#1d2035;padding:1px 5px;border-radius:3px">icons/</code> フォルダに置いて既存ファイルを上書きしてください</p>
+
+  <div class="section-title">アイコンプレビュー</div>
+  <div class="row" id="icon-row"></div>
+
+  <div class="section-title">Chromeツールバーイメージ</div>
+  <div class="toolbar-sim">
+    <canvas id="p16" width="16" height="16"></canvas>
+    APIデバッグ補助
+    <span class="badge-sim">3</span>
+  </div>
+
+  <div class="instructions">
+    <strong style="color:#dde6f5">使い方</strong><br>
+    1. 各ボタンを押してファイルをダウンロード<br>
+    2. ダウンロードした <code>icon16.png</code> / <code>icon48.png</code> / <code>icon128.png</code> を <code>icons/</code> フォルダに上書き保存<br>
+    3. Chrome の <code>chrome://extensions</code> で拡張機能を ↺ リロード
+  </div>
+
+  <script>
+    /* ─── Drawing ─── */
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function drawIcon(canvas, size) {
+      const ctx = canvas.getContext('2d');
+      const s = size;
+      const f = s / 128; // scale factor (icon designed at 128px)
+      const sc = v => Math.round(v * f * 10) / 10;
+
+      ctx.clearRect(0, 0, s, s);
+
+      /* 1 ── Background */
+      const cornerR = sc(24);
+      roundRect(ctx, 0, 0, s, s, cornerR);
+      const bg = ctx.createLinearGradient(0, 0, s, s);
+      bg.addColorStop(0, '#1e2240');
+      bg.addColorStop(1, '#0a0b15');
+      ctx.fillStyle = bg;
+      ctx.fill();
+
+      /* 2 ── Subtle top-left highlight */
+      roundRect(ctx, 0, 0, s, s, cornerR);
+      const hl = ctx.createRadialGradient(sc(32), sc(24), 0, sc(32), sc(24), sc(72));
+      hl.addColorStop(0, 'rgba(96,165,250,0.10)');
+      hl.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = hl;
+      ctx.fill();
+
+      /* ── Sizes 48+ : double-arrow design ── */
+      if (s >= 48) {
+        const lw = Math.max(sc(8), 2);
+        ctx.lineCap  = 'round';
+        ctx.lineJoin = 'round';
+
+        /* Request arrow →  (blue, upper) */
+        ctx.strokeStyle = '#60a5fa';
+        ctx.lineWidth   = lw;
+        ctx.shadowColor = '#60a5fa';
+        ctx.shadowBlur  = sc(8);
+
+        ctx.beginPath();
+        ctx.moveTo(sc(20), sc(48));
+        ctx.lineTo(sc(84), sc(48));
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(sc(73), sc(37));
+        ctx.lineTo(sc(88), sc(48));
+        ctx.lineTo(sc(73), sc(59));
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+
+        /* Response arrow ← (teal, lower) */
+        ctx.strokeStyle = '#34d399';
+        ctx.shadowColor = '#34d399';
+        ctx.shadowBlur  = sc(8);
+
+        ctx.beginPath();
+        ctx.moveTo(sc(108), sc(80));
+        ctx.lineTo(sc(44), sc(80));
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(sc(55), sc(69));
+        ctx.lineTo(sc(40), sc(80));
+        ctx.lineTo(sc(55), sc(91));
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+
+        /* Error dot — top right */
+        const dotX = sc(97), dotY = sc(27), dotR = sc(14);
+        ctx.beginPath();
+        ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
+        ctx.fillStyle = '#f87171';
+        ctx.shadowColor = '#f87171';
+        ctx.shadowBlur  = sc(12);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        /* "!" on dot */
+        ctx.fillStyle = '#fff';
+        ctx.font = `900 ${sc(18)}px system-ui, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('!', dotX, dotY + sc(1));
+
+      } else {
+        /* ── 16px : simplified ── */
+        /* One blue horizontal arrow */
+        ctx.strokeStyle = '#60a5fa';
+        ctx.lineWidth   = Math.max(sc(8), 1.5);
+        ctx.lineCap     = 'round';
+        ctx.lineJoin    = 'round';
+
+        ctx.beginPath();
+        ctx.moveTo(sc(18), sc(64));
+        ctx.lineTo(sc(90), sc(64));
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(sc(78), sc(50));
+        ctx.lineTo(sc(94), sc(64));
+        ctx.lineTo(sc(78), sc(78));
+        ctx.stroke();
+
+        /* Error dot */
+        ctx.beginPath();
+        ctx.arc(sc(100), sc(28), Math.max(sc(14), 2), 0, Math.PI * 2);
+        ctx.fillStyle = '#f87171';
+        ctx.fill();
+      }
+    }
+
+    /* ─── Build UI ─── */
+    const sizes = [
+      { size: 16,  display: 80,  filename: 'icon16.png' },
+      { size: 48,  display: 96,  filename: 'icon48.png' },
+      { size: 128, display: 128, filename: 'icon128.png' },
+    ];
+
+    const row = document.getElementById('icon-row');
+
+    sizes.forEach(({ size, display, filename }) => {
+      const item = document.createElement('div');
+      item.className = 'item';
+
+      const label = document.createElement('div');
+      label.className = 'size-label';
+      label.textContent = `${size} × ${size}`;
+
+      const canvas = document.createElement('canvas');
+      canvas.width  = size;
+      canvas.height = size;
+      canvas.style.width  = display + 'px';
+      canvas.style.height = display + 'px';
+      canvas.style.imageRendering = size === 16 ? 'pixelated' : 'auto';
+
+      drawIcon(canvas, size);
+
+      const btn = document.createElement('button');
+      btn.className   = 'dl-btn';
+      btn.textContent = `${filename} をダウンロード`;
+      btn.onclick = () => {
+        const a = document.createElement('a');
+        a.download = filename;
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+      };
+
+      item.append(label, canvas, btn);
+      row.appendChild(item);
+    });
+
+    /* Toolbar preview */
+    const p16 = document.getElementById('p16');
+    drawIcon(p16, 16);
+  </script>
+</body>
+</html>

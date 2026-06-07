@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>APIデバッグ補助</title>
+  <link rel="stylesheet" href="sidepanel.css" />
+</head>
+<body>
+  <header>
+    <span class="title">APIデバッグ補助</span>
+    <nav>
+      <button class="tab-btn active" data-tab="logs">Logs</button>
+      <button class="tab-btn" data-tab="jwt">JWT</button>
+      <button class="tab-btn" data-tab="env">Env</button>
+      <button class="tab-btn" data-tab="curl">curl</button>
+      <button class="tab-btn" data-tab="manual">Docs</button>
+    </nav>
+  </header>
+
+  <!-- ログタブ -->
+  <section id="tab-logs" class="tab-section active">
+    <div class="toolbar">
+      <div class="filter-chips">
+        <button class="chip active" data-filter="err">エラー</button>
+        <button class="chip" data-filter="all">全て</button>
+      </div>
+      <input type="text" id="log-filter" placeholder="URLで絞り込み" />
+      <button id="export-md" class="icon-btn" title="Markdownでエクスポート（AI分析向け）">MD</button>
+      <button id="export-logs" class="icon-btn" title="ログをJSONでエクスポート">↓</button>
+      <button id="select-mode-btn" class="icon-btn" title="複数選択モード（一括AI分析）">☑</button>
+      <button id="exclude-settings-btn" class="icon-btn" title="除外フィルター設定">⚙</button>
+      <button id="body-search-btn" class="icon-btn" title="ボディ内テキストも検索する（トグル）">∋</button>
+      <button id="snapshot-btn" class="icon-btn" title="スナップショット（保存・読込）">◈</button>
+      <button id="clear-logs" class="icon-btn" title="ログをクリア">✕</button>
+    </div>
+    <div id="snapshot-banner" class="snapshot-banner hidden">
+      <span id="snapshot-banner-name"></span>
+      <button id="snapshot-exit-btn" class="secondary">ライブに戻る</button>
+    </div>
+    <div id="tag-filter-bar" class="tag-filter-bar hidden">
+      <span class="tag-filter-label">タグ</span>
+      <div id="active-tag-chips" class="active-tag-chips"></div>
+    </div>
+    <div id="exclude-panel" class="exclude-panel hidden">
+      <div class="exclude-header">
+        <span>キャプチャ除外パターン</span>
+        <span class="exclude-hint">例: *analytics* / *gtm* / *facebook.net*</span>
+      </div>
+      <div id="exclude-list"></div>
+      <div class="exclude-add">
+        <input type="text" id="exclude-input" placeholder="*google-analytics.com/*" />
+        <button id="exclude-add-btn">追加</button>
+      </div>
+    </div>
+    <div id="log-stats" class="log-stats hidden"></div>
+    <div id="bulk-bar" class="bulk-bar hidden">
+      <span id="bulk-count" class="bulk-count"></span>
+      <button id="bulk-diff-btn" class="secondary hidden">差分を見る</button>
+      <button id="bulk-ai-btn">AIプロンプトをコピー</button>
+      <button id="bulk-deselect" class="secondary">選択解除</button>
+    </div>
+    <div id="log-list"></div>
+    <div id="diff-panel" class="detail-panel hidden">
+      <div class="detail-header">
+        <button id="close-diff">← 戻る</button>
+        <span style="font-size:11px;color:var(--text-mid);font-family:var(--mono)">差分ビュー</span>
+      </div>
+      <div id="diff-body" style="flex:1;overflow-y:auto;padding:10px"></div>
+    </div>
+    <div id="log-detail" class="detail-panel hidden">
+      <div class="detail-header">
+        <button id="close-detail">← 戻る</button>
+        <span id="detail-title"></span>
+        <button id="replay-btn" class="secondary" title="同じリクエストを再送">↺ 再送</button>
+      </div>
+      <div id="detail-body"></div>
+    </div>
+  </section>
+
+  <!-- JWT管理タブ -->
+  <section id="tab-jwt" class="tab-section">
+    <div class="toolbar">
+      <button id="add-jwt">+ 追加</button>
+    </div>
+    <div id="jwt-list"></div>
+    <div id="jwt-form" class="form-panel hidden">
+      <h3 id="jwt-form-title">JWTトークン追加</h3>
+      <label>名前<input type="text" id="jwt-name" placeholder="例: 本番API" /></label>
+      <label>URLパターン<input type="text" id="jwt-pattern" placeholder="例: *://api.example.com/*" /></label>
+      <label>ヘッダー名<input type="text" id="jwt-header" value="Authorization" /></label>
+      <label>プレフィックス<input type="text" id="jwt-prefix" value="Bearer " /></label>
+      <label>トークン<textarea id="jwt-token" rows="4" placeholder="eyJ..."></textarea></label>
+      <div class="form-actions">
+        <button id="jwt-cancel">キャンセル</button>
+        <button id="jwt-save" class="primary">保存</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 環境切り替えタブ -->
+  <section id="tab-env" class="tab-section">
+    <div class="toolbar">
+      <button id="add-env">+ 追加</button>
+      <button id="env-off" class="secondary">環境OFF</button>
+    </div>
+    <div id="env-status" class="env-status">現在の環境: なし（OFF）</div>
+    <div id="env-list"></div>
+    <div id="env-form" class="form-panel hidden">
+      <h3 id="env-form-title">環境追加</h3>
+      <label>環境名<input type="text" id="env-name" placeholder="例: 開発環境" /></label>
+      <div id="env-rules">
+        <div class="rule-row">
+          <input type="text" class="rule-from" placeholder="api.example.com（変換元ホスト）" />
+          <span>→</span>
+          <input type="text" class="rule-to" placeholder="api-dev.example.com（変換先ホスト）" />
+          <button class="remove-rule">✕</button>
+        </div>
+      </div>
+      <button id="add-rule" class="secondary">+ ルール追加</button>
+      <div class="form-actions">
+        <button id="env-cancel">キャンセル</button>
+        <button id="env-save" class="primary">保存</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- curlパーサータブ -->
+  <section id="tab-curl" class="tab-section">
+    <div class="curl-input-area">
+      <label>curlコマンドを貼り付け</label>
+      <textarea id="curl-input" rows="6" placeholder="curl -X POST https://api.example.com/users \&#10;  -H 'Authorization: Bearer eyJ...' \&#10;  -H 'Content-Type: application/json' \&#10;  -d '{&quot;name&quot;: &quot;test&quot;}'"></textarea>
+      <button id="curl-parse" class="primary">パース</button>
+    </div>
+    <div id="curl-result" class="hidden">
+      <div class="curl-section">
+        <div class="curl-label">メソッド</div>
+        <div id="curl-method" class="curl-value"></div>
+      </div>
+      <div class="curl-section">
+        <div class="curl-label">URL</div>
+        <div id="curl-url" class="curl-value curl-url-val"></div>
+      </div>
+      <div class="curl-section">
+        <div class="curl-label">ヘッダー</div>
+        <pre id="curl-headers" class="curl-pre"></pre>
+      </div>
+      <div class="curl-section" id="curl-body-section">
+        <div class="curl-label">ボディ</div>
+        <pre id="curl-body" class="curl-pre"></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- マニュアルタブ -->
+  <section id="tab-manual" class="tab-section">
+    <div class="manual-body">
+
+      <div class="manual-section">
+        <div class="manual-title">表示設定</div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <span class="setting-label">色覚サポートモード</span>
+            <span class="setting-desc">赤・緑をオレンジ・青に変更します（第1・第2色覚対応）</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="colorblind-toggle">
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="manual-section">
+        <div class="manual-title">ログ</div>
+        <div class="manual-text">ページ内のfetch / XHRリクエストを自動キャプチャします。デフォルトはエラー（4xx/5xx/接続失敗）のみ表示。「全て」に切り替えると全リクエストを確認できます。</div>
+        <ul class="manual-list">
+          <li>行にカーソルを乗せるとステータス・URL・エラー概要のプレビューを表示</li>
+          <li>クリックで詳細（リクエスト/レスポンスヘッダー・ボディ・エラー解説）を確認</li>
+          <li>詳細画面の「curlコマンド」欄でそのリクエストをcurlで再現できる形式にコピー</li>
+          <li>詳細画面の「↺ 再送」で同じリクエストをページコンテキストから再実行</li>
+          <li><kbd>↓</kbd> エクスポートで現在の表示ログをJSONファイルとして保存</li>
+          <li><kbd>⚙</kbd> 除外フィルターで計測・広告などのURLをログから除外</li>
+        </ul>
+      </div>
+
+      <div class="manual-section">
+        <div class="manual-title">JWT</div>
+        <div class="manual-text">URLパターンに一致するリクエストへ自動でAuthorizationヘッダーを付与します。ヘッダー名・プレフィックスは変更可能。</div>
+        <ul class="manual-list">
+          <li>URLパターンはワイルドカード <code>*</code> に対応<br>例: <code>*://api.example.com/*</code></li>
+          <li>有効期限（exp）はトークンから自動計算して一覧に表示</li>
+          <li>「有効」状態のトークンのみ注入され、ログのリクエストヘッダーに反映</li>
+        </ul>
+      </div>
+
+      <div class="manual-section">
+        <div class="manual-title">環境切り替え</div>
+        <div class="manual-text">ホスト名を自動置換してリクエスト先を切り替えます（Chrome の declarativeNetRequest を使用）。</div>
+        <ul class="manual-list">
+          <li>変換元ホスト → 変換先ホストを複数登録してまとめて管理</li>
+          <li>「適用」で即時有効化、「環境OFF」で全ルールを解除</li>
+          <li>例: <code>api.example.com</code> → <code>api-dev.example.com</code></li>
+        </ul>
+      </div>
+
+      <div class="manual-section">
+        <div class="manual-title">curlパーサー</div>
+        <div class="manual-text">curlコマンドを貼り付けるとメソッド・URL・ヘッダー・ボディに分解して見やすく表示します。チームから受け取ったcurlコマンドの確認などに便利です。</div>
+      </div>
+
+      <div class="manual-section">
+        <div class="manual-title">除外フィルター（⚙）</div>
+        <div class="manual-text">ログに記録したくないURLパターンを登録します。設定はブラウザ再起動後も保持されます。</div>
+        <ul class="manual-list">
+          <li>ワイルドカード <code>*</code> を使用可能</li>
+          <li>例: <code>*google-analytics.com/*</code> / <code>*gtm.js*</code> / <code>*facebook.net*</code></li>
+        </ul>
+      </div>
+
+      <div class="manual-section">
+        <div class="manual-title">エラー解説</div>
+        <div class="manual-text">4xx / 5xx / ネットワークエラー時、詳細画面の先頭に原因と対処法を自動表示します。</div>
+        <ul class="manual-list">
+          <li>401 では JWTタブの設定確認を案内</li>
+          <li>対応コード: 0（接続失敗・CORS）/ 400–429 / 500–504</li>
+        </ul>
+      </div>
+
+      <div class="manual-section">
+        <div class="manual-title">タグ付け</div>
+        <div class="manual-text">リクエストに自由なタグを付けて整理できます。詳細画面のタグ欄で入力・Enterで追加。</div>
+        <ul class="manual-list">
+          <li>ログ一覧の行にタグチップが表示され、クリックでそのタグに絞り込み</li>
+          <li>ツールバー下のタグバーで一覧・切替が可能</li>
+        </ul>
+      </div>
+
+      <div class="manual-section">
+        <div class="manual-title">ピン留め</div>
+        <div class="manual-text">重要なリクエストを右クリック → 「ピン / 解除」で先頭に固定できます。</div>
+        <ul class="manual-list">
+          <li>ピン留め中のログは一覧の先頭に表示され ◈ マークが付く</li>
+          <li>ログクリア時にピンも解除されます</li>
+        </ul>
+      </div>
+
+      <div class="manual-section">
+        <div class="manual-title">スナップショット（◈）</div>
+        <div class="manual-text">現在のログを名前付きで保存し、後から再現・比較できます。</div>
+        <ul class="manual-list">
+          <li>ツールバーの ◈ ボタンで保存・読込モーダルを開く</li>
+          <li>読込中はバナーが表示され「ライブに戻る」でリアルタイムに復帰</li>
+          <li>最大30件まで保存可能（古いものから自動削除）</li>
+        </ul>
+      </div>
+
+      <div class="manual-section">
+        <div class="manual-title">ボディ内検索（∋）</div>
+        <div class="manual-text">ツールバーの ∋ ボタンをONにするとURLに加えリクエスト・レスポンスボディ内テキストも絞り込み対象になります。</div>
+      </div>
+
+    </div>
+  </section>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <div id="snapshot-modal" class="modal-overlay hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <span class="modal-title">スナップショット</span>
+        <button id="snapshot-modal-close" class="icon-btn">✕</button>
+      </div>
+      <div class="snapshot-save-row">
+        <input type="text" id="snapshot-name-input" placeholder="スナップショット名（例: 本番バグ 0607）" />
+        <button id="snapshot-save-btn" class="primary">保存</button>
+      </div>
+      <div id="snapshot-list" class="snapshot-list"></div>
+    </div>
+  </div>
+
+  <div id="onboarding-overlay" class="onboarding-overlay hidden">
+    <div class="onboarding-card">
+      <div class="onboarding-logo">{a}</div>
+      <div class="onboarding-title">APIデバッグ補助へようこそ</div>
+      <div class="onboarding-desc">ページ内の fetch / XHR を自動キャプチャ。<br>エラー診断・JWT管理・環境切替・AI連携をひとつのパネルで。</div>
+      <ul class="onboarding-list">
+        <li>Logs — リクエストを記録してエラーを即診断</li>
+        <li>JWT — URLパターンにトークンを自動注入</li>
+        <li>Env — ホスト名を切り替えて環境を瞬時に変更</li>
+        <li>curl — curlコマンドをビジュアルに分解</li>
+      </ul>
+      <button id="onboarding-start" class="primary">始める →</button>
+    </div>
+  </div>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>
