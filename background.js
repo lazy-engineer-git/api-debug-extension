@@ -92,7 +92,7 @@ function matchExclude(url, pattern) {
   try { return new RegExp(re).test(url); } catch { return false; }
 }
 
-const GUMROAD_PRODUCT_ID = 'YOUR_PRODUCT_PERMALINK'; // Gumroad商品作成後に差し替え
+const GUMROAD_PRODUCT_ID = 'clktd';
 
 async function verifyGumroadLicense(key) {
   try {

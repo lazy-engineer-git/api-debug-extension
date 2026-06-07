@@ -1,6 +1,6 @@
 // ---- Freemium ----
 const FREE_LOG_LIMIT = 20;
-const GUMROAD_BUY_URL = 'https://YOUR_GUMROAD_URL'; // Gumroad商品作成後に差し替え
+const GUMROAD_BUY_URL = 'https://verdant660.gumroad.com/l/clktd';
 let isPro = false;
 
 function showUpgradeModal(featureName) {
