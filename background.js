@@ -92,7 +92,27 @@ function matchExclude(url, pattern) {
   try { return new RegExp(re).test(url); } catch { return false; }
 }
 
+const GUMROAD_PRODUCT_ID = 'YOUR_PRODUCT_PERMALINK'; // Gumroad商品作成後に差し替え
+
+async function verifyGumroadLicense(key) {
+  try {
+    const resp = await fetch('https://api.gumroad.com/v2/licenses/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `product_id=${encodeURIComponent(GUMROAD_PRODUCT_ID)}&license_key=${encodeURIComponent(key)}&increment_uses_count=false`,
+    });
+    const data = await resp.json();
+    return data.success ? { success: true } : { success: false, error: data.message || '無効なライセンスキーです' };
+  } catch {
+    return { success: false, error: 'ネットワークエラー' };
+  }
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'VERIFY_LICENSE') {
+    verifyGumroadLicense(message.key).then(sendResponse);
+    return true;
+  }
   if (message.type === 'API_REQUEST') {
     chrome.storage.local.get('excludePatterns').then(({ excludePatterns = [] }) => {
       const url = message.data.url || '';

@@ -156,6 +156,17 @@
     <div class="manual-body">
 
       <div class="manual-section">
+        <div class="manual-title">ライセンス</div>
+        <div class="license-status-row">
+          <span id="license-status-text" class="license-status-free">Free プラン</span>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button id="license-deactivate-btn" class="secondary hidden" style="font-size:10px;padding:3px 8px">解除</button>
+            <button id="upgrade-open-btn" class="primary" style="font-size:10px;padding:3px 8px">Pro にアップグレード</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="manual-section">
         <div class="manual-title">表示設定</div>
         <div class="setting-row">
           <div class="setting-info">
@@ -274,6 +285,34 @@
         <button id="snapshot-save-btn" class="primary">保存</button>
       </div>
       <div id="snapshot-list" class="snapshot-list"></div>
+    </div>
+  </div>
+
+  <!-- Upgrade modal -->
+  <div id="upgrade-modal" class="modal-overlay hidden">
+    <div class="modal-panel upgrade-panel">
+      <div class="modal-header">
+        <span class="modal-title">★ Pro機能</span>
+        <button id="upgrade-modal-close" class="icon-btn">✕</button>
+      </div>
+      <div class="upgrade-body">
+        <p class="upgrade-tagline" id="upgrade-feature-name"></p>
+        <ul class="upgrade-features">
+          <li>全ステータスのログ（500件・永続化）</li>
+          <li>ボディ内テキスト検索</li>
+          <li>差分ビュー・スナップショット</li>
+          <li>Markdownエクスポート / タグ / ピン留め</li>
+          <li>一括AI分析プロンプト</li>
+          <li>JWT自動注入 / 環境切り替え</li>
+        </ul>
+        <a id="upgrade-buy-link" href="#" target="_blank" class="btn-buy">購入する — $12</a>
+        <div class="license-divider"><span>ライセンスキーをお持ちの方</span></div>
+        <div class="license-input-row">
+          <input type="text" id="license-key-input" placeholder="XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX" spellcheck="false" autocomplete="off" />
+          <button id="license-activate-btn" class="primary">認証</button>
+        </div>
+        <div id="license-msg" class="license-msg hidden"></div>
+      </div>
     </div>
   </div>
 

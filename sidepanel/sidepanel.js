@@ -1,6 +1,79 @@
+// ---- Freemium ----
+const FREE_LOG_LIMIT = 20;
+const GUMROAD_BUY_URL = 'https://YOUR_GUMROAD_URL'; // Gumroad商品作成後に差し替え
+let isPro = false;
+
+function showUpgradeModal(featureName) {
+  const el = document.getElementById('upgrade-feature-name');
+  if (el) el.textContent = featureName ? `「${featureName}」はProプランの機能です` : 'Proプランの機能です';
+  document.getElementById('upgrade-buy-link').href = GUMROAD_BUY_URL;
+  document.getElementById('upgrade-modal').classList.remove('hidden');
+  document.getElementById('license-msg').classList.add('hidden');
+  document.getElementById('license-key-input').value = '';
+}
+
+async function activateLicense(key) {
+  const btn = document.getElementById('license-activate-btn');
+  const msgEl = document.getElementById('license-msg');
+  btn.disabled = true;
+  btn.textContent = '認証中…';
+  msgEl.className = 'license-msg hidden';
+  try {
+    const result = await chrome.runtime.sendMessage({ type: 'VERIFY_LICENSE', key: key.trim() });
+    if (result.success) {
+      isPro = true;
+      await chrome.storage.local.set({ licenseKey: key.trim(), isPro: true, licenseValidatedAt: Date.now() });
+      document.getElementById('upgrade-modal').classList.add('hidden');
+      showToast('Pro機能が有効になりました！');
+      applyProGates();
+      renderLicenseStatus();
+      renderLogs();
+    } else {
+      msgEl.textContent = result.error || '無効なライセンスキーです';
+      msgEl.className = 'license-msg license-err';
+    }
+  } catch {
+    msgEl.textContent = 'ネットワークエラー。接続を確認してください。';
+    msgEl.className = 'license-msg license-err';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '認証';
+  }
+}
+
+function applyProGates() {
+  document.querySelector('.filter-chips .chip[data-filter="all"]')?.classList.toggle('pro-locked', !isPro);
+  ['jwt', 'env'].forEach(tab => {
+    document.querySelector(`.tab-btn[data-tab="${tab}"]`)?.classList.toggle('pro-locked', !isPro);
+  });
+  ['export-md', 'select-mode-btn', 'body-search-btn', 'snapshot-btn'].forEach(id => {
+    document.getElementById(id)?.classList.toggle('pro-locked', !isPro);
+  });
+}
+
+function renderLicenseStatus() {
+  const el = document.getElementById('license-status-text');
+  if (!el) return;
+  if (isPro) {
+    el.textContent = 'Pro — 有効';
+    el.className = 'license-status-pro';
+    document.getElementById('license-deactivate-btn')?.classList.remove('hidden');
+    document.getElementById('upgrade-open-btn')?.classList.add('hidden');
+  } else {
+    el.textContent = 'Free プラン';
+    el.className = 'license-status-free';
+    document.getElementById('license-deactivate-btn')?.classList.add('hidden');
+    document.getElementById('upgrade-open-btn')?.classList.remove('hidden');
+  }
+}
+
 // ---- Tab switching ----
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    if (!isPro && (btn.dataset.tab === 'jwt' || btn.dataset.tab === 'env')) {
+      showUpgradeModal(btn.dataset.tab === 'jwt' ? 'JWT自動注入' : '環境切り替え');
+      return;
+    }
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
     btn.classList.add('active');
@@ -115,7 +188,10 @@ document.getElementById('ctx-url').addEventListener('click', () => { if (ctxLog)
 document.getElementById('ctx-curl').addEventListener('click', () => { if (ctxLog) navigator.clipboard.writeText(logToCurl(ctxLog)); });
 document.getElementById('ctx-tab').addEventListener('click', () => { if (ctxLog) chrome.tabs.create({ url: ctxLog.url }); });
 document.getElementById('ctx-ai').addEventListener('click', () => { if (ctxLog) navigator.clipboard.writeText(generateAIPrompt(ctxLog)); });
-document.getElementById('ctx-pin').addEventListener('click', () => { if (ctxLog) togglePin(ctxLog.id); });
+document.getElementById('ctx-pin').addEventListener('click', () => {
+  if (!isPro) { showUpgradeModal('ピン留め'); return; }
+  if (ctxLog) togglePin(ctxLog.id);
+});
 
 // ---- Diff view ----
 function lineDiff(textA, textB) {
@@ -224,6 +300,7 @@ function updateBulkBar() {
 }
 
 document.getElementById('select-mode-btn').addEventListener('click', () => {
+  if (!isPro) { showUpgradeModal('複数選択・差分ビュー'); return; }
   selectMode = !selectMode;
   document.getElementById('select-mode-btn').classList.toggle('active', selectMode);
   logList.classList.toggle('select-mode', selectMode);
@@ -248,6 +325,7 @@ document.getElementById('bulk-ai-btn').addEventListener('click', () => {
 });
 
 document.getElementById('export-md').addEventListener('click', () => {
+  if (!isPro) { showUpgradeModal('Markdownエクスポート'); return; }
   const md = generateMarkdownExport();
   const blob = new Blob([md], { type: 'text/markdown' });
   const a = document.createElement('a');
@@ -260,6 +338,10 @@ document.getElementById('export-md').addEventListener('click', () => {
 // Filter chips
 document.querySelectorAll('.filter-chips .chip').forEach(chip => {
   chip.addEventListener('click', () => {
+    if (!isPro && chip.dataset.filter === 'all') {
+      showUpgradeModal('全ステータスのログ表示');
+      return;
+    }
     document.querySelectorAll('.filter-chips .chip').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
     logFilterMode = chip.dataset.filter;
@@ -297,6 +379,12 @@ function renderLogs() {
     const bp = pinnedLogIds.has(b.id) ? 0 : 1;
     return ap - bp;
   });
+
+  let showUpgradeBanner = false;
+  if (!isPro && !snapshotViewActive && logs.length > FREE_LOG_LIMIT) {
+    logs = logs.slice(0, FREE_LOG_LIMIT);
+    showUpgradeBanner = true;
+  }
 
   updateStats(logs);
 
@@ -338,6 +426,11 @@ function renderLogs() {
       <span class="log-duration">${durationLabel}</span>
     </div>`;
   }).join('');
+
+  if (showUpgradeBanner) {
+    logList.insertAdjacentHTML('beforeend', `<div class="upgrade-log-banner"><span>最新${FREE_LOG_LIMIT}件を表示中 — Proで全件表示</span><button class="upgrade-log-btn" id="upgrade-log-banner-btn">Proにアップグレード</button></div>`);
+    document.getElementById('upgrade-log-banner-btn')?.addEventListener('click', () => showUpgradeModal('全件ログ表示'));
+  }
 
   logList.querySelectorAll('.log-item').forEach(el => {
     el.addEventListener('click', () => { hideTooltip(); openDetail(el.dataset.id); });
@@ -1187,7 +1280,17 @@ function openDetail(id) {
     });
   });
 
-  // Tag section (inserted at top of detail body)
+  // Tag section (inserted at top of detail body) — Pro only
+  if (!isPro) {
+    document.getElementById('detail-body').insertAdjacentHTML('afterbegin', `
+      <div class="detail-section detail-tag-section">
+        <div class="detail-section-header">
+          <div class="detail-section-title">タグ <span class="pro-badge-inline">Pro</span></div>
+        </div>
+        <div class="pro-locked-hint" id="pro-tag-hint">Proプランで利用可能</div>
+      </div>`);
+    document.getElementById('pro-tag-hint')?.addEventListener('click', () => showUpgradeModal('タグ付け'));
+  } else {
   const tagsForLog = logTags[id] || [];
   const tagChipsHtml = tagsForLog.map(t =>
     `<span class="detail-tag-chip">#${escHtml(t)}<button class="tag-remove-btn" data-tag="${escHtml(t)}" data-logid="${escHtml(id)}">✕</button></span>`
@@ -1237,6 +1340,7 @@ function openDetail(id) {
     refreshDetailTagChips(id);
     updateTagFilterBar();
   });
+  } // end isPro tag section
 
   // Collapsible section headers
   document.querySelectorAll('#detail-body .detail-section-header').forEach(header => {
@@ -1798,7 +1902,10 @@ function closeSnapshotModal() {
 }
 
 // ---- Snapshot events ----
-document.getElementById('snapshot-btn').addEventListener('click', openSnapshotModal);
+document.getElementById('snapshot-btn').addEventListener('click', () => {
+  if (!isPro) { showUpgradeModal('スナップショット'); return; }
+  openSnapshotModal();
+});
 document.getElementById('snapshot-modal-close').addEventListener('click', closeSnapshotModal);
 document.getElementById('snapshot-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('snapshot-modal')) closeSnapshotModal();
@@ -1813,6 +1920,7 @@ document.getElementById('snapshot-exit-btn').addEventListener('click', exitSnaps
 
 // ---- Body search toggle ----
 document.getElementById('body-search-btn').addEventListener('click', () => {
+  if (!isPro) { showUpgradeModal('ボディ内テキスト検索'); return; }
   bodySearchEnabled = !bodySearchEnabled;
   const btn = document.getElementById('body-search-btn');
   btn.classList.toggle('active', bodySearchEnabled);
@@ -1832,6 +1940,53 @@ document.getElementById('onboarding-start').addEventListener('click', () => {
 // ---- Init ----
 loadPins();
 loadTags().then(() => updateTagFilterBar());
+
+// ---- License init ----
+chrome.storage.local.get(['isPro', 'licenseKey', 'licenseValidatedAt']).then(({ isPro: stored, licenseKey, licenseValidatedAt }) => {
+  isPro = !!stored;
+  applyProGates();
+  renderLicenseStatus();
+
+  // 24時間経過後にバックグラウンドで再検証
+  if (licenseKey && licenseValidatedAt && Date.now() - licenseValidatedAt > 86400000) {
+    chrome.runtime.sendMessage({ type: 'VERIFY_LICENSE', key: licenseKey }).then(result => {
+      if (!result?.success) {
+        isPro = false;
+        chrome.storage.local.remove(['licenseKey', 'isPro', 'licenseValidatedAt']);
+        applyProGates();
+        renderLicenseStatus();
+        renderLogs();
+      } else {
+        chrome.storage.local.set({ licenseValidatedAt: Date.now() });
+      }
+    }).catch(() => {}); // オフライン時は現状維持
+  }
+});
+
+// Upgrade modal events
+document.getElementById('upgrade-modal-close').addEventListener('click', () => {
+  document.getElementById('upgrade-modal').classList.add('hidden');
+});
+document.getElementById('upgrade-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('upgrade-modal'))
+    document.getElementById('upgrade-modal').classList.add('hidden');
+});
+document.getElementById('license-activate-btn').addEventListener('click', () => {
+  const key = document.getElementById('license-key-input').value.trim();
+  if (key) activateLicense(key);
+});
+document.getElementById('license-key-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('license-activate-btn').click();
+});
+document.getElementById('license-deactivate-btn')?.addEventListener('click', async () => {
+  await chrome.storage.local.remove(['licenseKey', 'isPro', 'licenseValidatedAt']);
+  isPro = false;
+  applyProGates();
+  renderLicenseStatus();
+  renderLogs();
+  showToast('ライセンスを解除しました');
+});
+document.getElementById('upgrade-open-btn')?.addEventListener('click', () => showUpgradeModal());
 
 // ---- curl Parser tab ----
 function parseCurl(raw) {

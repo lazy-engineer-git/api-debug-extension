@@ -1311,3 +1311,34 @@ kbd {
 }
 .onboarding-list li::before { content: '›'; color: var(--primary); font-weight: 700; flex-shrink: 0; }
 #onboarding-start { padding: 8px 28px; font-size: 13px; }
+
+/* ---- Pro / Freemium ---- */
+.pro-locked { position: relative; }
+.pro-locked::after { content: ' ★'; font-size: 8px; vertical-align: super; color: var(--warn); }
+.tab-btn.pro-locked::after { content: ' ★'; font-size: 8px; color: var(--warn); }
+
+.upgrade-panel { max-height: 90vh; display: flex; flex-direction: column; }
+.upgrade-body { padding: 14px 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+.upgrade-tagline { font-size: 11px; color: var(--text-mid); min-height: 14px; }
+.upgrade-features { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.upgrade-features li { font-size: 11px; color: var(--text); padding: 5px 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); }
+.upgrade-features li::before { content: '✓ '; color: var(--ok); font-weight: 700; }
+.btn-buy { display: block; text-align: center; background: var(--primary); color: #0a0e1a; font-size: 13px; font-weight: 700; padding: 10px 20px; border-radius: var(--r); text-decoration: none; cursor: pointer; }
+.btn-buy:hover { opacity: 0.9; }
+.license-divider { display: flex; align-items: center; gap: 8px; color: var(--text-dim); font-size: 10px; }
+.license-divider::before, .license-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.license-input-row { display: flex; gap: 6px; }
+.license-input-row input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 6px 8px; color: var(--text); font-size: 11px; font-family: var(--mono); min-width: 0; }
+.license-input-row input:focus { outline: 1px solid var(--primary); border-color: var(--primary); }
+.license-msg { font-size: 11px; padding: 6px 8px; border-radius: var(--r-sm); }
+.license-msg.license-ok { background: var(--ok-dim); color: var(--ok); border: 1px solid rgba(52,211,153,0.2); }
+.license-msg.license-err { background: var(--error-dim); color: var(--error); border: 1px solid rgba(248,113,113,0.2); }
+.upgrade-log-banner { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.2); border-radius: var(--r-sm); margin: 4px 0; font-size: 11px; color: var(--text-mid); gap: 8px; }
+.upgrade-log-btn { flex-shrink: 0; background: var(--primary); color: #0a0e1a; border: none; border-radius: var(--r-sm); padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; }
+.upgrade-log-btn:hover { opacity: 0.9; }
+.license-status-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 11px; gap: 8px; }
+.license-status-pro { color: var(--ok); font-weight: 700; }
+.license-status-free { color: var(--text-mid); }
+.pro-badge-inline { font-size: 9px; font-weight: 700; color: var(--warn); background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2); border-radius: 3px; padding: 1px 4px; vertical-align: middle; margin-left: 4px; }
+.pro-locked-hint { font-size: 11px; color: var(--text-dim); padding: 6px 0; cursor: pointer; text-decoration: underline dotted; }
+.pro-locked-hint:hover { color: var(--primary); }
