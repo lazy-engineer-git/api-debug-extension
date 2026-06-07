@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — API Debug Helper</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 48px auto; padding: 0 24px; color: #222; line-height: 1.7; }
+    h1 { font-size: 24px; margin-bottom: 4px; }
+    h2 { font-size: 16px; margin-top: 32px; }
+    p, li { font-size: 14px; color: #444; }
+    ul { padding-left: 20px; }
+    .updated { font-size: 12px; color: #888; margin-bottom: 32px; }
+    a { color: #2563eb; }
+  </style>
+</head>
+<body>
+  <h1>Privacy Policy</h1>
+  <p class="updated">Last updated: June 7, 2026</p>
+
+  <p>API Debug Helper ("the Extension") is a Chrome extension that helps developers inspect and debug API requests. This policy explains what data the Extension handles and how.</p>
+
+  <h2>Data Collected and Stored</h2>
+  <p>All data is stored <strong>locally in your browser only</strong> using Chrome's built-in storage APIs. No data is uploaded to any server operated by the developer.</p>
+  <ul>
+    <li><strong>API request logs</strong> — URLs, HTTP methods, status codes, request/response headers and bodies captured from pages you visit. Stored temporarily in session storage (cleared on browser restart) and partially persisted in local storage for convenience.</li>
+    <li><strong>JWT tokens</strong> — Tokens you manually enter for auto-injection. Stored locally and never transmitted externally.</li>
+    <li><strong>Environment configurations</strong> — Host redirect rules you define. Stored locally.</li>
+    <li><strong>Exclude patterns, snapshots, tags, settings</strong> — All stored locally in your browser.</li>
+    <li><strong>License key</strong> — If you purchase a Pro license, your license key is stored locally and periodically verified against Gumroad's API (see below).</li>
+  </ul>
+
+  <h2>Data Transmitted Externally</h2>
+  <p>The Extension contacts external servers only in the following case:</p>
+  <ul>
+    <li><strong>License verification</strong> — When you activate or re-validate a Pro license key, the key is sent to <code>api.gumroad.com</code> to confirm its validity. No other data is included in this request.</li>
+  </ul>
+  <p>The Extension does <strong>not</strong> collect analytics, telemetry, crash reports, or any personally identifiable information.</p>
+
+  <h2>Permissions Used</h2>
+  <ul>
+    <li><strong>all_urls</strong> — Required to intercept fetch/XHR requests on pages you visit for logging purposes.</li>
+    <li><strong>storage</strong> — To save your settings, logs, and tokens locally.</li>
+    <li><strong>declarativeNetRequest</strong> — To redirect API hostnames when you activate an environment rule.</li>
+    <li><strong>sidePanel, tabs, activeTab</strong> — To display the side panel UI and replay requests.</li>
+  </ul>
+
+  <h2>Data Sharing</h2>
+  <p>No data is sold, rented, or shared with third parties. The only external communication is the Gumroad license verification described above.</p>
+
+  <h2>Data Retention</h2>
+  <p>All locally stored data can be cleared at any time by removing the Extension or clearing Chrome's extension storage. Session logs are automatically cleared when the browser restarts.</p>
+
+  <h2>Contact</h2>
+  <p>If you have questions about this policy, contact: <a href="mailto:verdegreen0801@gmail.com">verdegreen0801@gmail.com</a></p>
+</body>
+</html>
